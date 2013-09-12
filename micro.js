@@ -1,7 +1,7 @@
 var micro = {};
 
 
-micro.dom = {
+micro.dom = (function() {
 	
 	/**
 	* Determines whether a DOM element has the given className.
@@ -11,10 +11,10 @@ micro.dom = {
 	* @param {String} className The class name to search for
 	* @return {Boolean} Whether or not the element has the given class. 
 	*/
-	hasClass: function(node, className) {
+	var _hasClass = function(node, className) {
 		var re = new RegExp('(?:^|\\s+)' + className + '(?:\\s+|$)');
 		return re.test(node.className);
-	},
+	};
 	
 	/**
 	 * Adds a class name to a given DOM element.
@@ -23,11 +23,11 @@ micro.dom = {
 	 * @param {HTMLElement} node The DOM element. 
 	 * @param {String} className The class name to add to the class attribute
 	 */
-	addClass: function(node, className) {
+	var _addClass = function(node, className) {
 		if (!this.hasClass(node, className)) { // skip if already present 
 			node.className = micro.util.trim([node.className, className].join(' '));
 		}
-	},
+	};
 	
 	/**
 	 * Removes a class name from a given element.
@@ -36,7 +36,7 @@ micro.dom = {
 	 * @param {HTMLElement} node The DOM element. 
 	 * @param {String} className The class name to remove from the class attribute
 	 */
-	removeClass: function(node, className) {
+	var _removeClass = function(node, className) {
 		if (className && this.hasClass(node, className)) {
 			node.className = micro.util.trim(node.className.replace(new RegExp('(?:^|\\s+)' + className + '(?:\\s+|$)'), ' '));
 			
@@ -44,7 +44,7 @@ micro.dom = {
 				this.removeClass(node, className);
 			}
 		}
-	},
+	};
 	
 	/**
 	* If the className exists on the node it is removed, if it doesn't exist it is added.
@@ -54,7 +54,7 @@ micro.dom = {
 	* @param {String} className The class name to be toggled
 	* @param {Boolean} addClass Optional boolean to indicate whether class should be added or removed regardless of current state
 	*/
-	toggleClass: function(node, className, force) {
+	var _toggleClass = function(node, className, force) {
 		var add = (force !== undefined) ? force : !(this.hasClass(node, className));
 		
 		if (add) {
@@ -62,7 +62,7 @@ micro.dom = {
 		} else {
 			this.removeClass(node, className);
 		}
-	},
+	};
 	
 	/**
 	 * Wrapper/polyfill for querySelectorAll
@@ -72,7 +72,7 @@ micro.dom = {
 	 * @param {HTMLElement} [node]
 	 * @return {NodeList|Array}
 	 */
-	qsa: function(selector1, node1) {
+	var _qsa = function(selector1, node1) {
 		if (document.querySelectorAll) {
 			micro.dom.qsa = function(selector, node) {
 				node = node || document;
@@ -101,7 +101,7 @@ micro.dom = {
 		}
 		
 		return micro.dom.qsa(selector1, node1);
-	},
+	};
 	
 	/**
 	 * Wrapper/polyfill for Element.matches
@@ -110,7 +110,7 @@ micro.dom = {
 	 * @param {String}		selector
 	 * @return {Boolean}
 	 */
-	matches: function(node1, selector1) {
+	var _matches = function(node1, selector1) {
 		var docEl = document.documentElement;
 		var matchesFunc = docEl.matches || docEl.webkitMatchesSelector || docEl.mozMatchesSelector || docEl.msMatchesSelector || docEl.oMatchesSelector;
 		
@@ -130,13 +130,23 @@ micro.dom = {
 			};
 		}
 		return micro.dom.matches(node1, selector1);
-	}
+	};
 	
-};
+	
+	return {
+		hasClass: _hasClass,
+		addClass: _addClass,
+		removeClass: _removeClass,
+		toggleClass: _toggleClass,
+		qsa: _qsa,
+		matches: _matches
+	};
+	
+})();
 
 
 
-micro.event = {
+micro.event = (function() {
 	
 	/**
 	 * Add an event listener
@@ -146,13 +156,13 @@ micro.event = {
 	 * @param {Function} callback
 	 * @return {Event} The event
 	 */
-	addEvent: function(node, evt, callback) {
+	var _addEvent = function(node, evt, callback) {
 		if (node.addEventListener) {
 			return node.addEventListener(evt, callback, false);
 		} else if (node.attachEvent)  {
 			return node.attachEvent('on' + evt, callback);
 		}
-	},
+	};
 	
 	/**
 	 * Delegated event listener
@@ -160,10 +170,10 @@ micro.event = {
 	 * @Param {String} selector
 	 * @param {String} evt Name of the event to listen for
 	 * @param {Function} callback
-	 * @param {HTMLElement} container Node to add the listener to
+	 * @param {HTMLElement} [container] Node to add the listener to
 	 * @return {Event} The added event
 	 */
-	delegate: function(selector, evt, callback, container) {
+	var _delegate = function(selector, evt, callback, container) {
 		container = container || document.body;
 		
 		// Change events don't bubble in ie8-
@@ -185,7 +195,7 @@ micro.event = {
 				callback.apply(target);
 			}
 		});
-	},
+	};
 	
 	/**
 	 * Fires callback when the DOM is ready.
@@ -195,7 +205,7 @@ micro.event = {
 	 * 
 	 * @param {function} callback
 	 */
-	onReady: function(callback) {
+	var _onReady = function(callback) {
 		var ieTimeout;
 		
 		var ready = function(ev) {
@@ -229,13 +239,20 @@ micro.event = {
 				}
 			});
 		}
-	}
+	};
 	
-};
+	
+	return {
+		addEvent: _addEvent,
+		delegate: _delegate,
+		onReady: _onReady
+	};
+	
+})();
 
 
 
-micro.util = {
+micro.util = (function() {
 	
 	/**
 	 * Micro templating system.
@@ -247,23 +264,23 @@ micro.util = {
 	 * @param {Object} data Object with keys and values
 	 * @return {String} Completed string
 	 */
-	template: function(template, data) {
+	var _template = function(template, data) {
 		return template.replace(/\{\{([\w]+)\}\}/ig, function(a, b) {
 			return data[b] || '';
 		});
-	},
+	};
 	
 	/**
 	 * Basic polyfill.
-	 * 
 	 * @see http://paulirish.com/2011/requestanimationframe-for-smart-animating/
+	 * 
 	 * @param {Function} callback
 	 */
-	requestAnimFrame: (function() {
+	var _requestAnimFrame = (function() {
 		return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || function(callback) {
 			window.setTimeout(callback, 1000/60);
 		};
-	})(),
+	})();
 	
 	/**
 	 * Fallback for String.trim()
@@ -271,22 +288,22 @@ micro.util = {
 	 * @param {String} str
 	 * @return {String} Trimmed string
 	 */
-	trim: function(str) {
+	var _trim = function(str) {
 		if (str.trim) {
 			return str.trim();
 		} else {
 			return str.replace(/^\s+|\s+$/g,'');
 		}
-	},
+	};
 	
 	/**
 	 * Returns the height of the window
 	 *
 	 * @return {Number} Height in pixels
 	 */
-	getWindowHeight: function() {
+	var _getWindowHeight = function() {
 		return window.innerHeight || document.documentElement.offsetHeight;
-	},
+	};
 	
 	/**
 	 * Make an asynchronous request
@@ -297,7 +314,7 @@ micro.util = {
 	 * @param {Function}	[cfg.failure] 
 	 * @param {String}		[cfg.method] Defaults to 'GET'
 	 */
-	ajax: function(cfg){
+	var _ajax = function(cfg){
 		cfg.method = cfg.method || 'GET';
 		var xmlhttp;
 		
@@ -324,7 +341,15 @@ micro.util = {
 		
 		xmlhttp.open(cfg.method, cfg.url, true);
 		xmlhttp.send();
-	}
+	};
 	
-};
-
+	
+	return {
+		template: _template,
+		requestAnimFrame: _requestAnimFrame,
+		trim: _trim,
+		getWindowHeight: _getWindowHeight,
+		ajax: _ajax
+	};
+	
+})();
