@@ -199,18 +199,32 @@ micro.event = (function() {
 	
 	/**
 	 * Fires callback when the DOM is ready.
-	 * Needs some work. Will run twice for ie8- under some circumstances
 	 * @see https://github.com/jquery/jquery/blob/e53a91909061c7a7280a274990db179b94db81b6/speed/jquery-basis.js#L406
-	 * @see https://github.com/yui/yui3/blob/0ecec8862f21ab13a61b5c1459d164a68f273de0/src/event/js/event-ready-base-ie.js
 	 * 
 	 * @param {function} callback
 	 */
 	var _onReady = function(callback) {
-		var ieTimeout;
+		var isReady = false;
+		var ieSrollCheck = function() {
+			if (isReady) {
+				return;
+			}
+			
+			try {
+				// @see http://javascript.nwbox.com/IEContentLoaded/
+				document.documentElement.doScroll('left');
+			} catch(err) {
+				setTimeout(ieSrollCheck, 1);
+				return;
+			}
+		
+			ready();
+		}
 		
 		var ready = function(ev) {
 			callback();
 			cleanup(ev);
+			isReady = true;
 		};
 		
 		var cleanup = function(ev) {
@@ -218,8 +232,8 @@ micro.event = (function() {
 				document.removeEventListener('DOMContentLoaded', ready, false);
 				window.removeEventListener('load', ready, false);
 			} else if (ev) { // don't run if it was the setTimeout
-				window.detachEvent('onreadystatechange', ready);
-				clearTimeout(ieTimeout);
+				document.detachEvent('onreadystatechange', ready);
+				window.detachEvent('onload', ready);
 			}
 		};
 		
@@ -229,15 +243,20 @@ micro.event = (function() {
 			document.addEventListener('DOMContentLoaded', ready, false);
 			window.addEventListener('load', ready, false); //failsafe
 		} else {
-			// works unless page is rendered progressively (it'll fire too soon)
-			// @see http://snook.ca/archives/javascript/settimeout_solve_domcontentloaded
-			ieTimeout = setTimeout(ready);
-			
 			document.attachEvent('onreadystatechange', function(ev) {
 				if (document.readyState === 'complete') { // can't trust 'interactive'
 					ready(ev);
 				}
 			});
+			window.attachEvent('onload', ready);
+			
+			var toplevel = false;
+			try {
+				toplevel = window.frameElement === null;
+			} catch(e) {}
+			if (document.documentElement.doScroll && toplevel) {
+				ieSrollCheck();
+			}
 		}
 	};
 	
