@@ -191,7 +191,7 @@ micro.event = (function() {
 		
 		return this.addEvent(container, evt, function(ev) {
 			var target = ev.target || ev.srcElement;
-			if (micro.util.matches(target, selector)) {
+			if (micro.dom.matches(target, selector)) {
 				callback.apply(target);
 			}
 		});
